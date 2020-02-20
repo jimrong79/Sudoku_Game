@@ -10,9 +10,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets 
 from PyQt5.QtWidgets import QTableWidgetItem
 from sudoku_generator import generate_sudoku
-
+import time
+import threading
 
 class Ui_MainWindow(object):
+    #e = threading.Event()
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(724, 500)
@@ -69,7 +71,7 @@ class Ui_MainWindow(object):
         self.horizontalSlider.setGeometry(QtCore.QRect(490, 110, 181, 41))
         self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
         self.horizontalSlider.setObjectName("horizontalSlider")
-        self.horizontalSlider.setRange(20,50)
+        self.horizontalSlider.setRange(20,80)
         
         self.clue_number_label = QtWidgets.QLabel(self.centralwidget)
         self.clue_number_label.setGeometry(QtCore.QRect(600, 40, 61, 51))
@@ -88,8 +90,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.horizontalSlider.valueChanged.connect(self.clue_number_label.setNum)
         self.new_game_button.clicked.connect(lambda: self.new_game(MainWindow, self.horizontalSlider.value()))
-        board = self.board
-        self.solve_button.clicked.connect(lambda: self.solve(board))
+        self.solve_button.clicked.connect(self.solve)
         
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         
@@ -106,16 +107,36 @@ class Ui_MainWindow(object):
     def new_game(self, MainWindow, n):
         self.board = generate_sudoku(n)
         
+        
         for row, items in (enumerate(self.board)):
             for col, item in enumerate(items):
+                if item == '':
+                    self.tableWidget.setItem(row, col, QTableWidgetItem(''))
+                    continue
                 item = QTableWidgetItem(item)
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setFlags(QtCore.Qt.ItemIsEnabled)
                 self.tableWidget.setItem(row, col, QTableWidgetItem(item))
                 
-    def solve(self, board):
-        board = self.board
+                
+                
+    def solve(self):
         
-        self.solve_helper(board)
+        
+        board = [['' for i in range(9)] for j in range(9)]
+        
+        for x in range(9):
+            for y in range(9):
+                
+                board[x][y] = self.tableWidget.item(x,y).text()
+        
+        if self.solve_helper(board):
+            return
+        else:
+            print ("wrong")
+            self.solve_helper(self.board)
+        
+        
         """
         rows = [[] for i in range(9)]
         cols = [[] for i in range(9)]
@@ -132,7 +153,7 @@ class Ui_MainWindow(object):
         
     
     def solve_helper(self, board):
-                    
+        
         row, col = self.untested(board)
         
         if row == -1 and col == -1:
@@ -143,13 +164,18 @@ class Ui_MainWindow(object):
             if self.is_valid(board, row, col, num_str):
                 board[row][col] = num_str
                 item = QTableWidgetItem(num_str)
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setBackground(QtGui.QBrush(QtGui.QColor("red")))
                 self.tableWidget.setItem(row, col, QTableWidgetItem(item))
+                
+                #self.tableWidget.item(row,col).setText(num_str)
+                #self.tableWidget.update()
+                
                 if self.solve_helper(board):
                     return True
                 else:
                     board[row][col] = ''       
                     item = QTableWidgetItem('')
-                    item.setTextAlignment(QtCore.Qt.AlignCenter)
                     self.tableWidget.setItem(row, col, QTableWidgetItem(item))
         return False
             
@@ -157,7 +183,7 @@ class Ui_MainWindow(object):
     def untested(self, board):
         for i in range(9):
             for j in range(9):
-                if board[i][j] == '':
+                if board[i][j] == '' or board[i][j] == '.':
                     return i, j
         
         return -1, -1 
@@ -170,6 +196,7 @@ class Ui_MainWindow(object):
         
         if self.check_row(board,row,num_str) and self.check_col(board,col,num_str) and self.check_square(board,box_row,box_col,num_str):
             return True
+        
         return False
     
     def check_row(self, board, row, num_str):
