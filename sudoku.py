@@ -1,3 +1,5 @@
+#! python3
+
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'sudoku.ui'
@@ -9,12 +11,10 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets 
 from PyQt5.QtWidgets import QTableWidgetItem
-from sudoku_generator import generate_sudoku
-import time
-import threading
+from sudoku_generator import *
+
 
 class Ui_MainWindow(object):
-    #e = threading.Event()
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(724, 500)
@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.horizontalSlider.valueChanged.connect(self.clue_number_label.setNum)
         self.new_game_button.clicked.connect(lambda: self.new_game(MainWindow, self.horizontalSlider.value()))
-        self.solve_button.clicked.connect(self.solve)
+        self.solve_button.clicked.connect(lambda: self.solve(MainWindow))
         
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         
@@ -120,55 +120,51 @@ class Ui_MainWindow(object):
                 
                 
                 
-    def solve(self):
+    def solve(self, MainWindow):
         
         
+        VALID_INPUT = {'1','2','3','4','5','6','7','8','9'}
         board = [['' for i in range(9)] for j in range(9)]
         
         for x in range(9):
             for y in range(9):
                 
                 board[x][y] = self.tableWidget.item(x,y).text()
+                if board[x][y] not in VALID_INPUT:
+                
+                    board = self.board
+                    break       
+                
+        if board != self.board and is_valid_sudoku(board):
+            QtWidgets.QMessageBox.about(MainWindow, "Success!", "You've complete the sudoku puzzle!")
+            print ('1')
+            return 
+        
         
         if self.solve_helper(board):
+            print ('2')
             return
         else:
             print ("wrong")
             self.solve_helper(self.board)
         
-        
-        """
-        rows = [[] for i in range(9)]
-        cols = [[] for i in range(9)]
-        quads = [[[] for c in range(3)] for r in range(3)]
-        
-        for r in range(9):
-            for c in range(9):
-                if sudoku_board[r][c]:
-                    rows[r].append(int(sudoku_board[r][c]))
-                    cols[c].append(int(sudoku_board[r][c]))
-                    quads[r//3][c//3].append(int(sudoku_board[r][c]))
-        """
-        
-        
     
     def solve_helper(self, board):
         
-        row, col = self.untested(board)
+        row, col = untested(board)
         
         if row == -1 and col == -1:
             return True
             
         for num in range(1, 10):
             num_str = str(num)
-            if self.is_valid(board, row, col, num_str):
+            if is_valid(board, row, col, num_str):
                 board[row][col] = num_str
                 item = QTableWidgetItem(num_str)
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
                 item.setBackground(QtGui.QBrush(QtGui.QColor("red")))
                 self.tableWidget.setItem(row, col, QTableWidgetItem(item))
-                
-                #self.tableWidget.item(row,col).setText(num_str)
+                self.tableWidget.item(row,col).setText(num_str)
                 #self.tableWidget.update()
                 
                 if self.solve_helper(board):
@@ -180,46 +176,6 @@ class Ui_MainWindow(object):
         return False
             
         
-    def untested(self, board):
-        for i in range(9):
-            for j in range(9):
-                if board[i][j] == '' or board[i][j] == '.':
-                    return i, j
-        
-        return -1, -1 
-    
-    
-    def is_valid(self, board, row, col, num_str):
-        
-        box_row = row - row % 3
-        box_col = col - col % 3
-        
-        if self.check_row(board,row,num_str) and self.check_col(board,col,num_str) and self.check_square(board,box_row,box_col,num_str):
-            return True
-        
-        return False
-    
-    def check_row(self, board, row, num_str):
-        for i in range(9):
-            if board[row][i] == num_str:
-                return False
-        return True
-    
-    def check_col(self, board, col, num_str):
-        for i in range(9):
-            if board[i][col] == num_str:
-                return False
-            
-        return True
-    
-    def check_square(self, board, box_row, box_col, num_str):
-        for i in range(box_row, box_row + 3):
-            for j in range(box_col, box_col + 3):
-                if board[i][j] == num_str:
-                    return False
-        
-        return True  
-                
 
 
 
