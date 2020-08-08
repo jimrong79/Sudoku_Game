@@ -5,6 +5,8 @@ Sudoku game made by pyqt module
 Features:
 1. Different level of difficulties can be selected by increasing or decreasing # of clues given
 
+![](images/Game_Interface.PNG)
+
 
 TODO:
 1. Timer
